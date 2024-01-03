@@ -1,0 +1,319 @@
+(Задача 1)
+
+SELECT count(status)
+FROM company
+WHERE status = 'closed'
+-----------------------
+(Задача 2)
+
+SELECT funding_total
+FROM company
+WHERE category_code LIKE 'news'
+      AND country_code LIKE 'USA'
+ORDER BY funding_total DESC
+-----------------------
+(Задача 3)
+
+SELECT SUM(price_amount)
+FROM acquisition
+WHERE term_code LIKE 'cash'
+      AND EXTRACT(year FROM acquired_at) BETWEEN 2011 AND 2013
+GROUP BY term_code
+-----------------------
+(Задача 4)
+
+SELECT first_name,
+       last_name,
+       twitter_username
+FROM people
+WHERE twitter_username LIKE 'Silver%'
+-----------------------
+(Задача 5)
+
+SELECT *
+FROM people
+WHERE twitter_username LIKE '%money%'
+      AND last_name LIKE 'K%'
+-----------------------
+(Задача 6)
+
+SELECT country_code,
+       SUM(funding_total)
+FROM company
+GROUP BY country_code
+ORDER BY SUM(funding_total) DESC
+-----------------------
+(Задача 7)
+
+SELECT funded_at,
+       MIN(raised_amount),
+       MAX(raised_amount)
+FROM funding_round
+GROUP BY funded_at
+HAVING MIN(raised_amount) NOT IN (0,MAX(raised_amount))
+-----------------------
+(Задача 8)
+
+SELECT *,
+       CASE
+           WHEN invested_companies >=100 THEN 'high_activity'
+           WHEN invested_companies BETWEEN 20 AND 99 THEN 'middle_activity'
+           ELSE 'low_activity'
+       END
+FROM fund
+-----------------------
+(Задача 9)
+
+SELECT
+       CASE
+           WHEN invested_companies>=100 THEN 'high_activity'
+           WHEN invested_companies>=20 THEN 'middle_activity'
+           ELSE 'low_activity'
+       END AS activity,
+       ROUND(AVG(investment_rounds))
+FROM fund
+GROUP BY activity
+ORDER BY ROUND(AVG(investment_rounds))
+-----------------------
+(Задача 10)
+
+WITH
+a AS
+(SELECT *
+ FROM fund
+ WHERE EXTRACT(year FROM founded_at) BETWEEN 2010 AND 2012)
+
+SELECT country_code,
+       MIN(invested_companies),
+       MAX(invested_companies),
+       AVG(invested_companies)
+FROM a
+GROUP BY country_code
+HAVING MIN(invested_companies) > 0
+ORDER BY AVG(invested_companies) DESC, country_code 
+LIMIT 10
+-----------------------
+(Задача 11)
+
+SELECT p.first_name,
+       p.last_name,
+       e.instituition
+FROM people AS p
+LEFT JOIN education AS e ON p.id=e.person_id
+-----------------------
+(Задача 12)
+
+SELECT c.name, 
+       COUNT(DISTINCT tab2.instituition)
+FROM company AS c
+LEFT JOIN 
+         (SELECT tab1.instituition,
+                 p.company_id
+          FROM       
+               (SELECT person_id,
+                       instituition 
+                FROM education 
+                WHERE instituition  IS NOT NULL
+               ) AS tab1
+          INNER JOIN  people AS p ON p.id = tab1.person_id
+         ) AS tab2 ON tab2.company_id = c.id
+GROUP BY c.name
+ORDER BY COUNT(DISTINCT tab2.instituition) DESC
+LIMIT 5;
+-----------------------
+(Задача 13)
+
+SELECT distinct name
+FROM company
+WHERE status LIKE 'closed'
+      AND id IN (SELECT company_id
+ FROM funding_round
+ WHERE is_first_round = 1
+       AND is_last_round = 1)
+-----------------------
+(Задача 14)
+
+SELECT DISTINCT p.id
+FROM company AS c
+INNER JOIN people AS p ON c.id=p.company_id
+WHERE c.status LIKE 'closed'
+      AND c.id IN (SELECT company_id
+                   FROM funding_round
+                   WHERE is_first_round = 1
+                   AND is_last_round = 1)
+-----------------------
+(Задача 15)
+
+SELECT DISTINCT p.id,
+                e.instituition
+FROM company AS c
+INNER JOIN people AS p ON c.id = p.company_id
+LEFT JOIN education AS e ON p.id = e.person_id
+WHERE c.status LIKE 'closed'
+   AND c.id IN (SELECT company_id
+                FROM funding_round
+                WHERE is_first_round = 1
+                   AND is_last_round = 1)
+   AND  e.instituition IS NOT NULL
+-----------------------
+(Задача 16)
+
+SELECT DISTINCT p.id,
+       COUNT(e.instituition)
+FROM company AS c
+INNER JOIN people AS p ON c.id = p.company_id
+LEFT JOIN education AS e ON p.id = e.person_id
+WHERE c.status LIKE 'closed'
+      AND c.id IN (SELECT company_id
+                   FROM funding_round
+                   WHERE is_first_round = 1
+                   AND is_last_round = 1)
+      AND e.instituition IS NOT NULL
+GROUP BY p.id
+-----------------------
+(Задача 17)
+
+SELECT AVG(p_1.count_in)
+FROM (SELECT DISTINCT p.id,
+             COUNT(e.instituition) AS count_in
+      FROM company AS c
+      INNER JOIN people AS p ON c.id = p.company_id
+      LEFT JOIN education AS e ON p.id = e.person_id
+      WHERE c.status LIKE 'closed'
+            AND c.id IN (SELECT company_id
+                     FROM funding_round
+                     WHERE is_first_round = 1
+                        AND is_last_round = 1)
+            AND  e.instituition IS NOT NULL
+            GROUP BY p.id) AS p_1
+-----------------------
+(Задача 18)
+
+SELECT AVG(p_1.count_in)
+FROM (SELECT DISTINCT p.id,
+             COUNT(e.instituition) AS count_in
+      FROM company AS c
+      INNER JOIN people AS p ON c.id = p.company_id
+      LEFT JOIN education AS e ON p.id = e.person_id
+      WHERE c.name LIKE 'Facebook'
+            AND  e.instituition IS NOT NULL
+      GROUP BY p.id
+      ) AS p_1
+-----------------------
+(Задача 19)
+
+SELECT f.name AS name_of_fund, 
+       c.name AS name_of_company, 
+       fr.raised_amount AS amount
+FROM investment AS i
+JOIN company AS c ON i.company_id=c.id
+JOIN fund AS f ON i.fund_id=f.id
+JOIN funding_round AS fr ON i.funding_round_id = fr.id
+WHERE EXTRACT(YEAR FROM fr.funded_at) BETWEEN 2012 AND 2013
+      AND c.milestones > 6
+-----------------------
+(Задача 20)
+
+SELECT company.name AS acquiring_company,
+       p_2.price_amount,
+       p_2.acquired_company,
+       p_2.funding_total,
+       ROUND(p_2.price_amount / p_2.funding_total)
+FROM (SELECT c.name AS acquired_company,
+           c.funding_total,
+           p_1.acquiring_company_id,
+           p_1.price_amount
+      FROM company AS c
+      RIGHT JOIN (SELECT acquiring_company_id,
+                         acquired_company_id,
+                         price_amount
+                  FROM acquisition
+                  WHERE price_amount > 0) AS p_1 ON c.id = p_1.acquired_company_id) AS p_2 LEFT JOIN company ON company.id  = p_2.acquiring_company_id
+WHERE p_2.funding_total > 0
+ORDER BY p_2.price_amount DESC, p_2.acquired_company
+LIMIT 10
+-----------------------
+(Задача 21)
+
+SELECT c.name,
+       p_1.month
+FROM company AS c
+RIGHT JOIN (SELECT company_id,
+            EXTRACT(MONTH FROM funded_at) AS month
+            FROM funding_round
+            WHERE EXTRACT(YEAR FROM funded_at) BETWEEN 2010 AND 2013
+                  AND raised_amount <> 0
+            ) AS p_1 ON c.id = p_1.company_id
+WHERE c.category_code LIKE 'social'
+-----------------------
+(Задача 22)
+
+WITH 
+p_1 AS
+(SELECT EXTRACT(MONTH FROM funded_at) AS month,
+        id AS funding_round_id
+ FROM funding_round
+ WHERE EXTRACT(YEAR FROM funded_at) BETWEEN 2010 AND 2013),
+p_2 AS 
+(SELECT EXTRACT(MONTH FROM acquired_at) AS month,
+        COUNT(acquired_company_id) AS count_acquired,
+        SUM(price_amount) AS total_amount
+ FROM acquisition
+ WHERE EXTRACT(YEAR FROM acquired_at) BETWEEN 2010 AND 2013
+ GROUP BY EXTRACT(MONTH FROM acquired_at)),
+p_3 AS
+(SELECT i.funding_round_id,
+        f.name
+ FROM investment AS i
+ JOIN fund AS f ON f.id = i.fund_id
+ WHERE fund_id IN (SELECT id
+                   FROM fund
+                   WHERE country_code LIKE 'USA')),
+p_4 AS
+(SELECT month,
+        COUNT(DISTINCT name) AS count_USA
+ FROM p_1 
+ LEFT JOIN p_3 ON p_1.funding_round_id = p_3.funding_round_id
+ GROUP BY month)
+
+SELECT p_4.month,
+       p_4.count_USA,
+       p_2.count_acquired,
+       p_2.total_amount
+FROM p_4 
+LEFT JOIN p_2 ON p_4.month = p_2.month
+-----------------------
+(Задача 23)
+
+WITH
+p_1 AS
+(SELECT AVG(funding_total) AS total_2011,
+        country_code
+ FROM company
+ GROUP BY country_code,
+ EXTRACT(YEAR FROM founded_at)
+ HAVING EXTRACT(YEAR FROM founded_at) = 2011),           
+p_2 AS 
+(SELECT AVG(funding_total) AS total_2012,
+        country_code
+ FROM company
+ GROUP BY country_code,
+ EXTRACT(YEAR FROM founded_at)
+ HAVING EXTRACT(YEAR FROM founded_at) = 2012),
+p_3 AS 
+(SELECT AVG(funding_total) AS total_2013,
+        country_code
+ FROM company
+ GROUP BY country_code,
+ EXTRACT(YEAR FROM founded_at)
+ HAVING EXTRACT(YEAR FROM founded_at) = 2013)
+
+SELECT p_1.country_code,
+       p_1.total_2011,
+       p_2.total_2012,
+       p_3.total_2013
+FROM p_1 
+INNER JOIN p_2 ON p_1.country_code = p_2.country_code
+INNER JOIN p_3 ON p_1.country_code = p_3.country_code
+ORDER BY p_1.total_2011 DESC
+-----------------------
