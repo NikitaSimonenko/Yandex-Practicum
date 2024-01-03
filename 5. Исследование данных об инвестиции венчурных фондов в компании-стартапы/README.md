@@ -1,0 +1,1 @@
+https://code.s3.yandex.net/SQL%20for%20data%20and%20analytics/ER/basic_sql_project_ERD.png![image](https://github.com/NikitaSimonenko/Yandex-Practicum/assets/133521433/5e3e1236-4ad3-47a8-8069-e970007b8a9c)
